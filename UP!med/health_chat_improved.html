@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat IA - Assistente de Saúde</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .chat-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .chat-header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        .chat-header p {
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+
+        .status-indicator {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4ade80;
+            animation: pulse 2s infinite;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8fafc;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            line-height: 1.4;
+            white-space: pre-wrap;
+        }
+
+        .message.ai .message-content {
+            background: #e2e8f0;
+            color: #1e293b;
+            border-bottom-left-radius: 6px;
+        }
+
+        .message.user .message-content {
+            background: #4facfe;
+            color: white;
+            border-bottom-right-radius: 6px;
+        }
+
+        .message-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 10px;
+            font-size: 1.2rem;
+        }
+
+        .message.ai .message-avatar {
+            background: #667eea;
+            color: white;
+        }
+
+        .message.user .message-avatar {
+            background: #4facfe;
+            color: white;
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: 30px 20px;
+            background: white;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .welcome-message h2 {
+            color: #4facfe;
+            margin-bottom: 10px;
+            font-size: 1.5rem;
+        }
+
+        .welcome-message p {
+            color: #64748b;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .quick-questions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+        }
+
+        .quick-question {
+            background: #4facfe;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            border: none;
+            text-align: center;
+        }
+
+        .quick-question:hover {
+            background: #3b82f6;
+            transform: translateY(-2px);
+        }
+
+        .chat-input {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        #messageInput {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 20px;
+            font-size: 14px;
+            outline: none;
+            resize: none;
+            font-family: inherit;
+            min-height: 44px;
+            max-height: 100px;
+            transition: border-color 0.2s ease;
+        }
+
+        #messageInput:focus {
+            border-color: #4facfe;
+        }
+
+        .send-button {
+            background: #4facfe;
+            color: white;
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .send-button:hover {
+            background: #3b82f6;
+            transform: scale(1.05);
+        }
+
+        .send-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            background: #f1f5f9;
+            border-radius: 18px;
+            margin-bottom: 15px;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 3px;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #667eea;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        .emergency-banner {
+            background: #ef4444;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+        }
+
+        .emergency-banner.show {
+            display: block;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-8px); }
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                height: 90vh;
+                margin: 10px;
+            }
+            
+            .message-content {
+                max-width: 85%;
+            }
+            
+            .chat-header h1 {
+                font-size: 1.5rem;
+            }
+
+            .quick-questions {
+                grid-template-columns: 1fr;
+            }
+
+            .status-indicator {
+                display: none;
+            }
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="emergency-banner" id="emergencyBanner">
+            🚨 EMERGÊNCIA DETECTADA - LIGUE 192 (SAMU) IMEDIATAMENTE! 🚨
+        </div>
+        
+        <div class="chat-header">
+            <h1>🤖 Assistente de Saúde IA</h1>
+            <p>Seu assistente virtual especializado em saúde e emergências</p>
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>Online</span>
+            </div>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="welcome-message">
+                <h2>👋 Olá! Como posso ajudá-lo hoje?</h2>
+                <p>Sou seu assistente virtual especializado em saúde. Posso ajudar com primeiros socorros, informações médicas e orientações de emergência.</p>
+                <div class="quick-questions">
+                    <button class="quick-question" onclick="sendQuickQuestion('Quebrei o braço, o que fazer?')">
+                        🦴 Fraturas
+                    </button>
+                    <button class="quick-question" onclick="sendQuickQuestion('Estou com dor no peito')">
+                        💔 Dor no peito
+                    </button>
+                    <button class="quick-question" onclick="sendQuickQuestion('Corte com sangramento')">
+                        🩸 Feridas
+                    </button>
+                    <button class="quick-question" onclick="sendQuickQuestion('Sintomas de gripe')">
+                        🤒 Gripe
+                    </button>
+                    <button class="quick-question" onclick="sendQuickQuestion('Hospitais próximos')">
+                        🏥 Hospitais
+                    </button>
+                    <button class="quick-question" onclick="sendQuickQuestion('Queimadura')">
+                        🔥 Queimaduras
+                    </button>
+                </div>
+            </div>
+            
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="message-avatar">🤖</div>
+                <div>
+                    <span>Assistente está digitando</span>
+                    <div class="typing-dots">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-input">
+            <textarea 
+                id="messageInput" 
+                placeholder="Descreva seu problema de saúde ou emergência..."
+                rows="1"
+                onkeydown="handleKeyDown(event)"
+            ></textarea>
+            <button class="send-button" onclick="sendMessage()" id="sendButton">
+                ➤
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const emergencyBanner = document.getElementById('emergencyBanner');
+        
+        let isWaitingForResponse = false;
+
+        // Base de conhecimento médico
+        const medicalResponses = {
+            'fratura': {
+                keywords: ['quebrei', 'fratura', 'osso quebrado', 'braço quebrado', 'perna quebrada', 'dedos quebrados', 'pulso quebrado', 'fraturou', 'osso'],
+                response: '🚨 **FRATURA ÓSSEA - AÇÃO IMEDIATA:**\n\n**O QUE FAZER AGORA:**\n• ❌ NÃO mova o membro lesionado\n• 🧊 Aplique gelo enrolado em pano (15-20 min)\n• 🏥 PROCURE IMEDIATAMENTE um pronto-socorro\n• 💊 Pode tomar analgésico se necessário\n• 📱 Ligue 192 (SAMU) se for grave\n\n**SINAIS DE EMERGÊNCIA:**\n• Osso aparente\n• Deformidade visível\n• Dormência ou formigamento\n• Sangramento intenso\n\n**⚠️ IMPORTANTE: Não tente "endireitar" o osso. Vá ao hospital AGORA!**',
+                isEmergency: true
+            },
+            'corte': {
+                keywords: ['corte', 'cortei', 'sangramento', 'ferida', 'machucado', 'sangue', 'cortar', 'ferimento'],
+                response: '🩸 **CORTE/FERIDA - PRIMEIROS SOCORROS:**\n\n**PASSOS IMEDIATOS:**\n1. 🧽 Lave bem as mãos\n2. 🧹 Limpe a ferida com água limpa\n3. 🗜️ Faça pressão direta para parar sangramento\n4. 🩹 Cubra com gaze ou pano limpo\n5. ⬆️ Eleve o membro se possível\n\n**PROCURE MÉDICO SE:**\n• Sangramento não para em 10 minutos\n• Corte é profundo (vê-se gordura/músculo)\n• Mais de 2cm de extensão\n• Objeto ainda está no corte\n• Sinais de infecção\n\n**⚠️ TETANO: Procure posto de saúde se não está vacinado!**',
+                isEmergency: false
+            },
+            'queimadura': {
+                keywords: ['queimadura', 'queimei', 'fogo', 'água quente', 'óleo quente', 'queimou', 'queimar'],
+                response: '🔥 **QUEIMADURA - TRATAMENTO IMEDIATO:**\n\n**PRIMEIROS SOCORROS:**\n1. 🚿 Coloque água fria corrente (10-15 min)\n2. ❌ NÃO use gelo, pasta de dente ou manteiga\n3. 🧴 Remova roupas/acessórios da área\n4. 🩹 Cubra com pano limpo e úmido\n5. 💊 Tome analgésico se necessário\n\n**PROCURE HOSPITAL SE:**\n• Queimadura maior que sua palma\n• Bolhas grandes\n• Queimadura no rosto/genitais\n• Queimadura elétrica\n• Pele branca ou carbonizada\n\n**⚠️ GRAVE: Ligue 192 para queimaduras extensas!**',
+                isEmergency: false
+            },
+            'dor_peito': {
+                keywords: ['dor no peito', 'infarto', 'ataque cardíaco', 'peito apertado', 'coração', 'dor coração', 'peito doendo'],
+                response: '💔 **POSSÍVEL INFARTO - EMERGÊNCIA MÁXIMA:**\n\n**SINAIS DE INFARTO:**\n• Dor forte no peito (aperto/queimação)\n• Dor irradiando para braço/pescoço\n• Suor frio\n• Náusea/vômito\n• Falta de ar\n• Tontura\n\n**AÇÃO IMEDIATA:**\n1. 📱 LIGUE 192 AGORA\n2. 💊 Mastigue 1 AAS (se não for alérgico)\n3. 🪑 Sente-se em posição confortável\n4. 👕 Afrouxe roupas apertadas\n5. 🧘 Mantenha-se calmo\n\n**⚠️ CADA MINUTO CONTA! NÃO ESPERE!**\n\n**🚨 CHAME AMBULÂNCIA IMEDIATAMENTE!**',
+                isEmergency: true
+            },
+            'gripe': {
+                keywords: ['gripe', 'resfriado', 'sintomas gripe', 'febre', 'dor de cabeça', 'tosse', 'gripado', 'coriza'],
+                response: '🤒 **GRIPE - TRATAMENTO DOMICILIAR:**\n\n**SINTOMAS COMUNS:**\n• Febre (38-40°C)\n• Dor de cabeça intensa\n• Dores musculares\n• Tosse seca\n• Cansaço extremo\n• Calafrios\n\n**TRATAMENTO:**\n• 🛏️ Repouso absoluto\n• 💧 Beba muitos líquidos\n• 💊 Antitérmicos (paracetamol/dipirona)\n• 🍯 Chás mornos com mel\n• 🏠 Fique em casa (evite contagiar outros)\n\n**PROCURE MÉDICO SE:**\n• Febre acima de 39°C por 3+ dias\n• Dificuldade respiratória\n• Dor no peito\n• Vômitos persistentes\n• Piora após melhora inicial\n\n**⚠️ Grupos de risco devem procurar médico mais cedo!**',
+                isEmergency: false
+            },
+            'hospital': {
+                keywords: ['hospitais próximos', 'hospital', 'onde ir', 'pronto socorro', 'ps', 'unidade saúde', 'upa'],
+                response: '🏥 **HOSPITAIS E UNIDADES DE SAÚDE:**\n\n**PARA ENCONTRAR HOSPITAIS PRÓXIMOS:**\n• 📱 Use Google Maps: "hospitais próximos"\n• 🌐 Site da Secretaria de Saúde da sua cidade\n• 📞 Ligue 192 para orientação\n\n**TIPOS DE UNIDADES:**\n• 🚨 **Pronto Socorro**: Emergências graves\n• 🏥 **UPA**: Urgências médias\n• 🏥 **Posto de Saúde**: Consultas básicas\n• 🚑 **SAMU 192**: Emergências\n\n**NÚMEROS IMPORTANTES:**\n• 📞 SAMU: 192\n• 📞 Bombeiros: 193\n• 📞 Polícia: 190\n\n**⚠️ Para emergências graves, sempre ligue 192!**',
+                isEmergency: false
+            },
+            'engasgo': {
+                keywords: ['engasgo', 'engasgando', 'não consigo respirar', 'sufocando', 'engasgou', 'engasgar'],
+                response: '😰 **ENGASGO - EMERGÊNCIA:**\n\n**SE A PESSOA AINDA TOSSE:**\n• 👏 Incentive a tossir\n• 🗣️ Fale "continue tossindo"\n• 👀 Fique atento\n\n**SE NÃO CONSEGUE TOSSIR/FALAR:**\n1. 🤲 Manobra de Heimlich:\n   - Fique atrás da pessoa\n   - Punho na boca do estômago\n   - Compressões para cima\n2. 📱 LIGUE 192 IMEDIATAMENTE\n3. 🫁 Se desmaiar: inicie respiração boca-a-boca\n\n**EM BEBÊS:**\n• Vire de bruços no seu antebraço\n• Dê 5 pancadas nas costas\n• Vire e faça 5 compressões no peito\n\n**🚨 LIGUE 192 AGORA!**',
+                isEmergency: true
+            }
+        };
+
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function sendQuickQuestion(question) {
+            messageInput.value = question;
+            sendMessage();
+        }
+
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || isWaitingForResponse) return;
+
+            // Adicionar mensagem do usuário
+            addMessage(message, 'user');
+            messageInput.value = '';
+            
+            // Mostrar indicador de digitação
+            showTypingIndicator();
+            
+            // Simular resposta da IA
+            setTimeout(() => {
+                const response = generateResponse(message);
+                hideTypingIndicator();
+                addMessage(response.text, 'ai');
+                
+                // Mostrar banner de emergência se necessário
+                if (response.isEmergency) {
+                    showEmergencyBanner();
+                }
+            }, 1000 + Math.random() * 1000);
+        }
+
+        function addMessage(message, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = sender === 'user' ? '👤' : '🤖';
+            
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            content.textContent = message;
+            
+            if (sender === 'user') {
+                messageDiv.appendChild(content);
+                messageDiv.appendChild(avatar);
+            } else {
+                messageDiv.appendChild(avatar);
+                messageDiv.appendChild(content);
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function generateResponse(message) {
+            const lowerMessage = message.toLowerCase();
+            
+            // Buscar resposta na base de conhecimento
+            for (const [key, data] of Object.entries(medicalResponses)) {
+                if (data.keywords.some(keyword => lowerMessage.includes(keyword))) {
+                    return {
+                        text: data.response,
+                        isEmergency: data.isEmergency
+                    };
+                }
+            }
+            
+            // Resposta padrão
+            return {
+                text: '🤖 **ASSISTENTE DE SAÚDE:**\n\nObrigado por sua pergunta! Para te ajudar melhor, preciso de mais informações específicas sobre seus sintomas.\n\n**Posso ajudar com:**\n• Primeiros socorros\n• Orientações de emergência\n• Informações sobre sintomas\n• Localização de hospitais\n\n**⚠️ IMPORTANTE:** Este assistente não substitui consulta médica. Em caso de emergência, ligue 192 (SAMU).\n\nPode me contar mais detalhes sobre o que está acontecendo?',
+                isEmergency: false
+            };
+        }
+
+        function showTypingIndicator() {
+            isWaitingForResponse = true;
+            typingIndicator.style.display = 'flex';
+            sendButton.disabled = true;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            isWaitingForResponse = false;
+            typingIndicator.style.display = 'none';
+            sendButton.disabled = false;
+        }
+
+        function showEmergencyBanner() {
+            emergencyBanner.classList.add('show');
+            setTimeout(() => {
+                emergencyBanner.classList.remove('show');
+            }, 10000);
+        }
+
+        // Auto-resize textarea
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+        });
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            messageInput.focus();
+        });
+    </script>
+</body>
+</html>
